@@ -3,7 +3,10 @@ package com.prismsoft.intrepidnetworksswapi.di
 import com.prismsoft.intrepidnetworksswapi.BuildConfig
 import com.prismsoft.intrepidnetworksswapi.api.StarWarsApi
 import com.prismsoft.intrepidnetworksswapi.adapters.TimeAdapter
+import com.prismsoft.intrepidnetworksswapi.dto.Episode
 import com.squareup.moshi.Moshi
+import com.squareup.moshi.adapters.EnumJsonAdapter
+import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import okhttp3.OkHttpClient
 import org.kodein.di.Kodein
 import org.kodein.di.generic.bind
@@ -17,14 +20,15 @@ val networkModule = Kodein.Module("networkModule") {
     bind<Moshi>() with singleton {
         Moshi.Builder()
             .add(TimeAdapter())
+            .add(KotlinJsonAdapterFactory())
             .build()
     }
 
     bind<OkHttpClient>() with singleton {
         OkHttpClient.Builder()
-            .connectTimeout(15, TimeUnit.SECONDS)
-            .readTimeout(15, TimeUnit.SECONDS)
-            .writeTimeout(15, TimeUnit.SECONDS)
+            .connectTimeout(30, TimeUnit.SECONDS)
+            .readTimeout(30, TimeUnit.SECONDS)
+            .writeTimeout(30, TimeUnit.SECONDS)
             .build()
     }
 

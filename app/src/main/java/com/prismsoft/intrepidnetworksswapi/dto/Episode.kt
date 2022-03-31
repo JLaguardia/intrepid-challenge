@@ -1,9 +1,11 @@
 package com.prismsoft.intrepidnetworksswapi.dto
 
+import android.os.Parcelable
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
+import kotlinx.parcelize.Parcelize
 import java.io.Serializable
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -11,6 +13,7 @@ import java.time.format.DateTimeFormatter
 
 @JsonClass(generateAdapter = true)
 @Entity
+@Parcelize
 data class Episode(
     val title: String,
     @Json(name = "episode_id")
@@ -22,15 +25,10 @@ data class Episode(
     val producer: String,
     @Json(name = "release_date")
     val releaseDate: LocalDate,
-    val characters: List<String>,
-    val planets: List<String>,
-    val starships: List<String>,
-    val vehicles: List<String>,
-    val species: List<String>,
     val created: LocalDateTime,
     val edited: LocalDateTime,
     val url: String
-) : Serializable {
+): Parcelable {
     fun formattedReleaseDate(): String =
         DateTimeFormatter.ofPattern("MMM dd, yyyy").format(releaseDate)
 

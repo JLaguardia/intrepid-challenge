@@ -1,62 +1,77 @@
 package com.prismsoft.intrepidnetworksswapi
 
-import android.util.Log
-import androidx.lifecycle.MediatorLiveData
-import androidx.lifecycle.MutableLiveData
-import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.*
 import androidx.navigation.NavController
-import com.prismsoft.intrepidnetworksswapi.adapters.TimeAdapter
-import com.prismsoft.intrepidnetworksswapi.api.StarWarsApi
 import com.prismsoft.intrepidnetworksswapi.dto.Episode
+import com.prismsoft.intrepidnetworksswapi.storage.EpisodeRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.launch
-import java.time.LocalDateTime
 
-class MainViewModel(
-//    private val api: StarWarsApi //DI wasnt working, not enough time to figure out why
-) : BaseViewModel() {
+class MainViewModel(private val repository: EpisodeRepository) : BaseViewModel() {
 
-    var api: StarWarsApi? = null
+    /**
+     * Used for updating the list when mutated
+     */
     private val _sort: MutableLiveData<SortEnum> = MutableLiveData(SortEnum.RELEASE_DATE)
-    var sortType = SortEnum.RELEASE_DATE
-    set(value) {
-        field = value
-        _sort.postValue(sortType)
-        //todo finish sorting Transformations. switchmap stuff
+    fun setSortType(type: SortEnum) {
+        _sort.postValue(type)
     }
 
-    sealed class MainState : State() {
-        data class DataLoaded(val episodes: List<Episode>, val navController: NavController) :
-            MainState()
-
+    /**
+     * State to observe for data changes.
+     * I have found that this is not necessary for Compose
+     */
+    sealed class MainState : State {
+        data class DataFetched(val navController: NavController) : MainState()
         data class Error(val navController: NavController) : MainState()
     }
 
+    /**
+     * Fetches the episodes from the api and populates the db.
+     * State is set according to the result in order to start
+     * observing.
+     */
     fun getEpisodes(navController: NavController) {
-        Log.w("MainViewModel","getEpisodes called")
         viewModelScope.launch(Dispatchers.IO) {
-            try {
-                api?.getAllEpisodes()?.let { response ->
-//                    MediatorLiveData<Pair<SortEnum, List<Episode>>>
-                    //insert into db
-                    Log.w("MainViewModel","got episodes count: ${response.results.size}")
-                    setState(MainState.DataLoaded(response.results.sortedBy { it.episodeNo }, navController))
+            val fetchSuccessful = repository.fetch()
+            setState(
+                if (fetchSuccessful) {
+                    MainState.DataFetched(navController)
+                } else {
+                    MainState.Error(navController)
                 }
-            } catch (e: Exception) {
-                Log.e("MainViewModel", "There was an exception: ${e.localizedMessage}")
-                setState(MainState.Error(navController))
-            }
+            )
         }
     }
 
+    /**
+     * Get all episodes from repository - using switch map for dynamic sorting
+     */
+    fun getAllEpisodes() =
+        Transformations.switchMap(_sort) { sortType -> repository.getAllSorted(sortType) }
 
+    fun getEpisodeByIdFlow(epId: Int): Flow<Episode?> = repository.getById(epId)
 }
 
-enum class SortEnum{
+enum class SortEnum {
     RELEASE_DATE,
     EPISODE_NUM,
     TITLE_ASC,
     TITLE_DESC
+}
+
+//no longer necessary, but keeping it in just in case
+fun <T, K, R> LiveData<T>.combineWith(
+    secondData: LiveData<K>,
+    block: (T?, K?) -> R
+): LiveData<R> {
+    val result = MediatorLiveData<R>()
+    result.addSource(this) {
+        result.value = block.invoke(this.value, secondData.value)
+    }
+    result.addSource(secondData) {
+        result.value = block.invoke(this.value, secondData.value)
+    }
+    return result
 }
