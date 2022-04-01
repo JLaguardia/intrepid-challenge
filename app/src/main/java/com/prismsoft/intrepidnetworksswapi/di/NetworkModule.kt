@@ -3,20 +3,18 @@ package com.prismsoft.intrepidnetworksswapi.di
 import com.prismsoft.intrepidnetworksswapi.BuildConfig
 import com.prismsoft.intrepidnetworksswapi.api.StarWarsApi
 import com.prismsoft.intrepidnetworksswapi.adapters.TimeAdapter
-import com.prismsoft.intrepidnetworksswapi.dto.Episode
 import com.squareup.moshi.Moshi
-import com.squareup.moshi.adapters.EnumJsonAdapter
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import okhttp3.OkHttpClient
-import org.kodein.di.Kodein
-import org.kodein.di.generic.bind
-import org.kodein.di.generic.instance
-import org.kodein.di.generic.singleton
+import org.kodein.di.DI
+import org.kodein.di.bind
+import org.kodein.di.instance
+import org.kodein.di.singleton
 import retrofit2.Retrofit
 import retrofit2.converter.moshi.MoshiConverterFactory
 import java.util.concurrent.TimeUnit
 
-val networkModule = Kodein.Module("networkModule") {
+val networkModule = DI.Module("networkModule") {
     bind<Moshi>() with singleton {
         Moshi.Builder()
             .add(TimeAdapter())

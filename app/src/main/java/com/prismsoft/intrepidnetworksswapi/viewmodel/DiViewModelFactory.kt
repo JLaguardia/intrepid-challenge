@@ -2,11 +2,11 @@ package com.prismsoft.intrepidnetworksswapi.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
-import org.kodein.di.Kodein
-import org.kodein.di.TT
+import org.kodein.di.DI
 import org.kodein.di.direct
+import org.kodein.type.erased
 
-class KodeinViewModelFactory(val kodein: Kodein) : ViewModelProvider.Factory {
+class DiViewModelFactory(private val di: DI) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T =
-        kodein.direct.Instance(TT(modelClass))
+        di.direct.Instance(erased(modelClass))
 }

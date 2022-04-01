@@ -3,10 +3,10 @@ package com.prismsoft.intrepidnetworksswapi.ui
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material.Button
 import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
@@ -23,6 +23,7 @@ import androidx.constraintlayout.compose.ConstrainScope
 import androidx.constraintlayout.compose.ConstrainedLayoutReference
 import androidx.constraintlayout.compose.ConstraintLayout
 import com.prismsoft.intrepidnetworksswapi.R
+import com.prismsoft.intrepidnetworksswapi.SortEnum
 import com.prismsoft.intrepidnetworksswapi.dto.Episode
 
 val margins = 8.dp
@@ -167,7 +168,7 @@ fun EpisodeDetail(ep: Episode, onClick: () -> Unit) {
 }
 
 @Composable
-fun SwSplashScreen(){
+fun SwSplashScreen() {
     ConstraintLayout {
         val (progress, text) = createRefs()
         CircularProgressIndicator(modifier = Modifier
@@ -186,6 +187,92 @@ fun SwSplashScreen(){
             },
             text = "Loading... all the way from Mustafar."
         )
+    }
+}
+
+@Composable
+fun EpisodeList(
+    episodes: List<Episode>,
+    onItemClick: (Episode) -> Unit,
+    onSortClick: (SortEnum) -> Unit
+) {
+    ConstraintLayout {
+        val (itemList, sortEp, sortTitleAZ, sortTitleZA, sortDate) = createRefs()
+
+        LazyColumn(
+            modifier = Modifier.constrainAs(itemList) {
+                constrainCenter(
+                    vertical = false,
+                    margins = margins
+                )
+            }
+        ) {
+            items(episodes) { ep ->
+                LineItem(ep = ep) { episode -> onItemClick(episode) }
+                Spacer(modifier = Modifier.height(8.dp))
+            }
+        }
+
+        Button(
+            modifier = Modifier
+                .constrainAs(sortEp) {
+                    start.linkTo(
+                        anchor = parent.start,
+                        margin = margins
+                    )
+                    top.linkTo(
+                        anchor = itemList.bottom,
+                        margin = 30.dp
+                    )
+                },
+            onClick = { onSortClick(SortEnum.EPISODE_NUM) }) {
+            Text(text = "Sort By Episode #")
+        }
+        Button(
+            modifier = Modifier
+                .constrainAs(sortTitleZA) {
+                    end.linkTo(
+                        anchor = parent.end,
+                        margin = margins
+                    )
+                    top.linkTo(
+                        anchor = sortTitleAZ.bottom,
+                        margin = 30.dp
+                    )
+                },
+            onClick = { onSortClick(SortEnum.TITLE_DESC) }) {
+            Text(text = "Sort By Title Z-A")
+        }
+        Button(
+            modifier = Modifier
+                .constrainAs(sortTitleAZ) {
+                    end.linkTo(
+                        anchor = parent.end,
+                        margin = margins
+                    )
+                    top.linkTo(
+                        anchor = itemList.bottom,
+                        margin = 30.dp
+                    )
+                },
+            onClick = { onSortClick(SortEnum.TITLE_ASC) }) {
+            Text(text = "Sort By Title A-Z")
+        }
+        Button(
+            modifier = Modifier
+                .constrainAs(sortDate) {
+                    start.linkTo(
+                        anchor = parent.start,
+                        margin = margins
+                    )
+                    top.linkTo(
+                        anchor = sortEp.bottom,
+                        margin = 30.dp
+                    )
+                },
+            onClick = { onSortClick(SortEnum.RELEASE_DATE) }) {
+            Text(text = "Sort By Release")
+        }
     }
 }
 

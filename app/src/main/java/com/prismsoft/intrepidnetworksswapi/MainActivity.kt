@@ -5,17 +5,12 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material.Button
-import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
-import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.lifecycle.*
 import androidx.navigation.NavController
 import androidx.navigation.NavType
@@ -27,19 +22,15 @@ import com.prismsoft.intrepidnetworksswapi.dto.Episode
 import com.prismsoft.intrepidnetworksswapi.dto.StarWarsApiResponse
 import com.prismsoft.intrepidnetworksswapi.ui.*
 import com.prismsoft.intrepidnetworksswapi.ui.theme.IntrepidNetworksSwapiTheme
-import org.kodein.di.Kodein
-import org.kodein.di.KodeinAware
-import org.kodein.di.android.kodein
-import org.kodein.di.direct
-import org.kodein.di.generic.instance
+import org.kodein.di.*
+import org.kodein.di.android.closestDI
 import java.time.LocalDate
 import java.time.LocalDateTime
 
 // api: https://swapi.dev/api/films/ [GET]
+class MainActivity : ComponentActivity(), DIAware {
 
-class MainActivity : ComponentActivity(), KodeinAware {
-
-    override val kodein: Kodein by kodein()
+    override val di: DI by closestDI()
     private val viewModel: MainViewModel by viewModel()
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -77,97 +68,25 @@ class MainActivity : ComponentActivity(), KodeinAware {
                 .fillMaxHeight()
         ) {
             viewModel.getEpisodes(navController)
-            composable("splash") {
-                SwSplashScreen()
-            }
+            composable("splash") { SwSplashScreen() }
             composable(route = "list") {
-                val episodes by remember { viewModel.getAllEpisodes().asFlow() }.collectAsState(
-                    initial = emptyList()
-                )
+                val episodes by remember { viewModel.getAllEpisodes().asFlow() }
+                    .collectAsState(initial = emptyList())
 
                 if (episodes.isEmpty()) {
-                    Row { Text(text = "The returned list was empty") }
-                } else {
-                    ConstraintLayout {
-                        val (itemList, sortEp, sortTitleAZ, sortTitleZA, sortDate) = createRefs()
-
-                        LazyColumn(
-                            modifier = Modifier.constrainAs(itemList) {
-                                constrainCenter(
-                                    vertical = false,
-                                    margins = margins
-                                )
-                            }
-                        ) {
-                            items(episodes) { ep ->
-                                LineItem(ep = ep) { episode ->
-                                    navController.navigate("episodeDetail/${episode.episodeNo}")
-                                }
-                                Spacer(modifier = Modifier.height(8.dp))
-                            }
-                        }
-
-                        Button(
-                            modifier = Modifier
-                                .constrainAs(sortEp) {
-                                    start.linkTo(
-                                        anchor = parent.start,
-                                        margin = margins
-                                    )
-                                    top.linkTo(
-                                        anchor = itemList.bottom,
-                                        margin = 30.dp
-                                    )
-                                },
-                            onClick = { viewModel.setSortType(SortEnum.EPISODE_NUM) }) {
-                            Text(text = "Sort By Episode #")
-                        }
-                        Button(
-                            modifier = Modifier
-                                .constrainAs(sortTitleZA) {
-                                    end.linkTo(
-                                        anchor = parent.end,
-                                        margin = margins
-                                    )
-                                    top.linkTo(
-                                        anchor = sortTitleAZ.bottom,
-                                        margin = 30.dp
-                                    )
-                                },
-                            onClick = { viewModel.setSortType(SortEnum.TITLE_DESC) }) {
-                            Text(text = "Sort By Title Z-A")
-                        }
-                        Button(
-                            modifier = Modifier
-                                .constrainAs(sortTitleAZ) {
-                                    end.linkTo(
-                                        anchor = parent.end,
-                                        margin = margins
-                                    )
-                                    top.linkTo(
-                                        anchor = itemList.bottom,
-                                        margin = 30.dp
-                                    )
-                                },
-                            onClick = { viewModel.setSortType(SortEnum.TITLE_ASC) }) {
-                            Text(text = "Sort By Title A-Z")
-                        }
-                        Button(
-                            modifier = Modifier
-                                .constrainAs(sortDate) {
-                                    start.linkTo(
-                                        anchor = parent.start,
-                                        margin = margins
-                                    )
-                                    top.linkTo(
-                                        anchor = sortEp.bottom,
-                                        margin = 30.dp
-                                    )
-                                },
-                            onClick = { viewModel.setSortType(SortEnum.RELEASE_DATE) }) {
-                            Text(text = "Sort By Release")
-                        }
+                    Column(modifier = Modifier.fillMaxSize()) {
+                        Row { Text(text = "The returned list was empty", color = Color.Red) }
+                        Row { Button(onClick = { viewModel.getEpisodes(navController) }){
+                            Text(text = "Try again")
+                        } }
                     }
+                } else {
+                    EpisodeList(
+                        episodes = episodes,
+                        onItemClick = { episode ->
+                            navController.navigate("episodeDetail/${episode.episodeNo}")
+                        },
+                        onSortClick = { sortType -> viewModel.setSortType(sortType) })
                 }
             }
             composable(
@@ -199,7 +118,6 @@ class MainActivity : ComponentActivity(), KodeinAware {
     }
 }
 
-
 val dummyResponse = StarWarsApiResponse(
     results = listOf(
         Episode(
@@ -218,7 +136,7 @@ val dummyResponse = StarWarsApiResponse(
 
 @Preview(showBackground = true)
 @Composable
-fun SplashScreenPreview(){
+fun SplashScreenPreview() {
     IntrepidNetworksSwapiTheme {
         SwSplashScreen()
     }
@@ -228,7 +146,7 @@ fun SplashScreenPreview(){
 @Composable
 fun LineItemPreview() {
     IntrepidNetworksSwapiTheme {
-        LineItem(ep = dummyResponse.results[0]) {  }
+        LineItem(ep = dummyResponse.results[0]) { }
     }
 }
 
@@ -240,6 +158,6 @@ fun DetailPreview() {
     }
 }
 
-inline fun <reified VM : ViewModel, T> T.viewModel(): Lazy<VM> where T : KodeinAware, T : ComponentActivity {
+inline fun <reified VM : ViewModel, T> T.viewModel(): Lazy<VM> where T : DIAware, T : ComponentActivity {
     return lazy { ViewModelProvider(this, direct.instance()).get(VM::class.java) }
 }
