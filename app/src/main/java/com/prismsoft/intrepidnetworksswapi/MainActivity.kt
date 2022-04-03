@@ -6,6 +6,7 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.Button
+import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -72,22 +73,23 @@ class MainActivity : ComponentActivity(), DIAware {
             composable(route = "list") {
                 val episodes by remember { viewModel.getAllEpisodes().asFlow() }
                     .collectAsState(initial = emptyList())
-
-                if (episodes.isEmpty()) {
-                    Column(modifier = Modifier.fillMaxSize()) {
-                        Row { Text(text = "The returned list was empty", color = Color.Red) }
-                        Row { Button(onClick = { viewModel.getEpisodes(navController) }){
-                            Text(text = "Try again")
-                        } }
-                    }
-                } else {
-                    EpisodeList(
-                        episodes = episodes,
-                        onItemClick = { episode ->
+                EpisodeList(
+                    episodes = episodes,
+                    listener = object : EpisodeListListener {
+                        override fun onItemClick(episode: Episode) {
                             navController.navigate("episodeDetail/${episode.episodeNo}")
-                        },
-                        onSortClick = { sortType -> viewModel.setSortType(sortType) })
-                }
+                        }
+
+                        override fun onSortClick(sortType: SortEnum) {
+                            viewModel.setSortType(sortType)
+                        }
+
+                        override fun onRefreshClick() {
+                            viewModel.getEpisodes(navController)
+                        }
+
+                    }
+                )
             }
             composable(
                 route = "episodeDetail/{epId}",
@@ -104,7 +106,10 @@ class MainActivity : ComponentActivity(), DIAware {
             composable("error") {
                 Column {
                     Row {
-                        Text(text = "There was an error!", color = Color.Red)
+                        Text(
+                            text = "There was an error!",
+                            color = MaterialTheme.colors.error
+                        )
                     }
                     Row {
                         Button(
@@ -134,19 +139,26 @@ val dummyResponse = StarWarsApiResponse(
     )
 )
 
-@Preview(showBackground = true)
-@Composable
-fun SplashScreenPreview() {
-    IntrepidNetworksSwapiTheme {
-        SwSplashScreen()
-    }
-}
+//@Preview(showBackground = true)
+//@Composable
+//fun SplashScreenPreview() {
+//    IntrepidNetworksSwapiTheme {
+//        SwSplashScreen()
+//    }
+//}
 
 @Preview(showBackground = true)
 @Composable
 fun LineItemPreview() {
     IntrepidNetworksSwapiTheme {
-        LineItem(ep = dummyResponse.results[0]) { }
+        EpisodeList(episodes = emptyList(), object : EpisodeListListener{
+            override fun onItemClick(episode: Episode) {}
+
+            override fun onSortClick(sortType: SortEnum) {}
+
+            override fun onRefreshClick() {}
+        })
+//        LineItem(ep = dummyResponse.results[0]) { }
     }
 }
 

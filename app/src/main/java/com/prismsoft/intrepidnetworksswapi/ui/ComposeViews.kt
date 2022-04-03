@@ -8,6 +8,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.Button
 import androidx.compose.material.CircularProgressIndicator
+import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -193,87 +194,119 @@ fun SwSplashScreen() {
 @Composable
 fun EpisodeList(
     episodes: List<Episode>,
-    onItemClick: (Episode) -> Unit,
-    onSortClick: (SortEnum) -> Unit
+    listener: EpisodeListListener
 ) {
     ConstraintLayout {
-        val (itemList, sortEp, sortTitleAZ, sortTitleZA, sortDate) = createRefs()
+        if (episodes.isNotEmpty()) {
+            val (itemList, sortEp, sortTitleAZ, sortTitleZA, sortDate) = createRefs()
 
-        LazyColumn(
-            modifier = Modifier.constrainAs(itemList) {
-                constrainCenter(
-                    vertical = false,
-                    margins = margins
+            LazyColumn(
+                modifier = Modifier.constrainAs(itemList) {
+                    constrainCenter(
+                        vertical = false,
+                        margins = margins
+                    )
+                }
+            ) {
+                items(episodes) { ep ->
+                    LineItem(ep = ep) { episode -> listener.onItemClick(episode) }
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
+            }
+
+            Button(
+                modifier = Modifier
+                    .constrainAs(sortEp) {
+                        start.linkTo(
+                            anchor = parent.start,
+                            margin = margins
+                        )
+                        top.linkTo(
+                            anchor = itemList.bottom,
+                            margin = 30.dp
+                        )
+                    },
+                onClick = { listener.onSortClick(SortEnum.EPISODE_NUM) }) {
+                Text(text = "Sort By Episode #")
+            }
+            Button(
+                modifier = Modifier
+                    .constrainAs(sortTitleZA) {
+                        end.linkTo(
+                            anchor = parent.end,
+                            margin = margins
+                        )
+                        top.linkTo(
+                            anchor = sortTitleAZ.bottom,
+                            margin = 30.dp
+                        )
+                    },
+                onClick = { listener.onSortClick(SortEnum.TITLE_DESC) }) {
+                Text(text = "Sort By Title Z-A")
+            }
+            Button(
+                modifier = Modifier
+                    .constrainAs(sortTitleAZ) {
+                        end.linkTo(
+                            anchor = parent.end,
+                            margin = margins
+                        )
+                        top.linkTo(
+                            anchor = itemList.bottom,
+                            margin = 30.dp
+                        )
+                    },
+                onClick = { listener.onSortClick(SortEnum.TITLE_ASC) }) {
+                Text(text = "Sort By Title A-Z")
+            }
+            Button(
+                modifier = Modifier
+                    .constrainAs(sortDate) {
+                        start.linkTo(
+                            anchor = parent.start,
+                            margin = margins
+                        )
+                        top.linkTo(
+                            anchor = sortEp.bottom,
+                            margin = 30.dp
+                        )
+                    },
+                onClick = { listener.onSortClick(SortEnum.RELEASE_DATE) }) {
+                Text(text = "Sort By Release")
+            }
+        } else {
+            val (emptyState, refresh) = createRefs()
+
+            Text(
+                text = "The returned list was empty",
+                style = MaterialTheme.typography.caption,
+                color = MaterialTheme.colors.error,
+                modifier = Modifier.constrainAs(emptyState) { constrainCenter(margins = 16.dp) }
+            )
+            Button(
+                onClick = { listener.onRefreshClick() },
+                modifier = Modifier.constrainAs(refresh) {
+                    start.linkTo(emptyState.start)
+                    end.linkTo(emptyState.end)
+                    top.linkTo(
+                        anchor = emptyState.bottom,
+                        margin = margins
+                    )
+                }
+            ) {
+                Text(
+                    text = "Try again",
+                    style = MaterialTheme.typography.button
                 )
             }
-        ) {
-            items(episodes) { ep ->
-                LineItem(ep = ep) { episode -> onItemClick(episode) }
-                Spacer(modifier = Modifier.height(8.dp))
-            }
-        }
-
-        Button(
-            modifier = Modifier
-                .constrainAs(sortEp) {
-                    start.linkTo(
-                        anchor = parent.start,
-                        margin = margins
-                    )
-                    top.linkTo(
-                        anchor = itemList.bottom,
-                        margin = 30.dp
-                    )
-                },
-            onClick = { onSortClick(SortEnum.EPISODE_NUM) }) {
-            Text(text = "Sort By Episode #")
-        }
-        Button(
-            modifier = Modifier
-                .constrainAs(sortTitleZA) {
-                    end.linkTo(
-                        anchor = parent.end,
-                        margin = margins
-                    )
-                    top.linkTo(
-                        anchor = sortTitleAZ.bottom,
-                        margin = 30.dp
-                    )
-                },
-            onClick = { onSortClick(SortEnum.TITLE_DESC) }) {
-            Text(text = "Sort By Title Z-A")
-        }
-        Button(
-            modifier = Modifier
-                .constrainAs(sortTitleAZ) {
-                    end.linkTo(
-                        anchor = parent.end,
-                        margin = margins
-                    )
-                    top.linkTo(
-                        anchor = itemList.bottom,
-                        margin = 30.dp
-                    )
-                },
-            onClick = { onSortClick(SortEnum.TITLE_ASC) }) {
-            Text(text = "Sort By Title A-Z")
-        }
-        Button(
-            modifier = Modifier
-                .constrainAs(sortDate) {
-                    start.linkTo(
-                        anchor = parent.start,
-                        margin = margins
-                    )
-                    top.linkTo(
-                        anchor = sortEp.bottom,
-                        margin = 30.dp
-                    )
-                },
-            onClick = { onSortClick(SortEnum.RELEASE_DATE) }) {
-            Text(text = "Sort By Release")
         }
     }
+}
+
+interface EpisodeListListener {
+    fun onItemClick(episode: Episode)
+    fun onSortClick(sortType: SortEnum)
+    fun onRefreshClick()
 }
 
 fun ConstrainScope.constrainCenter(
