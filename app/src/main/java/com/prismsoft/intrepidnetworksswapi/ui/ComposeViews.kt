@@ -194,7 +194,9 @@ fun SwSplashScreen() {
 @Composable
 fun EpisodeList(
     episodes: List<Episode>,
-    listener: EpisodeListListener
+    onItemClick: (Episode) -> Unit,
+    onSortClick: (SortEnum) -> Unit,
+    onRefreshClick: () -> Unit
 ) {
     ConstraintLayout {
         if (episodes.isNotEmpty()) {
@@ -209,7 +211,7 @@ fun EpisodeList(
                 }
             ) {
                 items(episodes) { ep ->
-                    LineItem(ep = ep) { episode -> listener.onItemClick(episode) }
+                    LineItem(ep = ep) { episode -> onItemClick(episode) }
                     Spacer(modifier = Modifier.height(8.dp))
                 }
             }
@@ -226,7 +228,7 @@ fun EpisodeList(
                             margin = 30.dp
                         )
                     },
-                onClick = { listener.onSortClick(SortEnum.EPISODE_NUM) }) {
+                onClick = { onSortClick(SortEnum.EPISODE_NUM) }) {
                 Text(text = "Sort By Episode #")
             }
             Button(
@@ -241,7 +243,7 @@ fun EpisodeList(
                             margin = 30.dp
                         )
                     },
-                onClick = { listener.onSortClick(SortEnum.TITLE_DESC) }) {
+                onClick = { onSortClick(SortEnum.TITLE_DESC) }) {
                 Text(text = "Sort By Title Z-A")
             }
             Button(
@@ -256,7 +258,7 @@ fun EpisodeList(
                             margin = 30.dp
                         )
                     },
-                onClick = { listener.onSortClick(SortEnum.TITLE_ASC) }) {
+                onClick = { onSortClick(SortEnum.TITLE_ASC) }) {
                 Text(text = "Sort By Title A-Z")
             }
             Button(
@@ -271,7 +273,7 @@ fun EpisodeList(
                             margin = 30.dp
                         )
                     },
-                onClick = { listener.onSortClick(SortEnum.RELEASE_DATE) }) {
+                onClick = { onSortClick(SortEnum.RELEASE_DATE) }) {
                 Text(text = "Sort By Release")
             }
         } else {
@@ -284,7 +286,7 @@ fun EpisodeList(
                 modifier = Modifier.constrainAs(emptyState) { constrainCenter(margins = 16.dp) }
             )
             Button(
-                onClick = { listener.onRefreshClick() },
+                onClick = { onRefreshClick() },
                 modifier = Modifier.constrainAs(refresh) {
                     start.linkTo(emptyState.start)
                     end.linkTo(emptyState.end)
@@ -301,12 +303,6 @@ fun EpisodeList(
             }
         }
     }
-}
-
-interface EpisodeListListener {
-    fun onItemClick(episode: Episode)
-    fun onSortClick(sortType: SortEnum)
-    fun onRefreshClick()
 }
 
 fun ConstrainScope.constrainCenter(

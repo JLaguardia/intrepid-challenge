@@ -1,15 +1,14 @@
 package com.prismsoft.intrepidnetworksswapi.storage
 
 import android.util.Log
-import androidx.lifecycle.LiveData
 import com.prismsoft.intrepidnetworksswapi.SortEnum
 import com.prismsoft.intrepidnetworksswapi.api.StarWarsApi
 import com.prismsoft.intrepidnetworksswapi.dto.Episode
 import kotlinx.coroutines.flow.Flow
 
 interface EpisodeRepository {
-    fun getAll(): LiveData<List<Episode>>
-    fun getAllSorted(type: SortEnum): LiveData<List<Episode>>
+    fun getAll(): Flow<List<Episode>>
+    fun getAllSorted(type: SortEnum): Flow<List<Episode>>
     suspend fun fetch(): Boolean
     fun getById(epId: Int): Flow<Episode?>
 }
@@ -18,9 +17,9 @@ class EpisodeRepositoryImpl(
     private val api: StarWarsApi,
     private val dao: EpisodeDao
 ) : EpisodeRepository {
-    override fun getAll(): LiveData<List<Episode>> = dao.get()
+    override fun getAll(): Flow<List<Episode>> = dao.get()
 
-    override fun getAllSorted(type: SortEnum): LiveData<List<Episode>> =
+    override fun getAllSorted(type: SortEnum): Flow<List<Episode>> =
         when (type) {
             SortEnum.TITLE_ASC -> dao.getSortByName()
             SortEnum.TITLE_DESC -> dao.getSortByNameDesc()

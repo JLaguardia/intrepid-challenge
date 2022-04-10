@@ -5,7 +5,11 @@ import androidx.navigation.NavController
 import com.prismsoft.intrepidnetworksswapi.dto.Episode
 import com.prismsoft.intrepidnetworksswapi.storage.EpisodeRepository
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.launch
 
 class MainViewModel(private val repository: EpisodeRepository) : BaseViewModel() {
@@ -13,9 +17,9 @@ class MainViewModel(private val repository: EpisodeRepository) : BaseViewModel()
     /**
      * Used for updating the list when mutated
      */
-    private val _sort: MutableLiveData<SortEnum> = MutableLiveData(SortEnum.RELEASE_DATE)
+    private val _sort: MutableStateFlow<SortEnum> = MutableStateFlow(SortEnum.RELEASE_DATE)
     fun setSortType(type: SortEnum) {
-        _sort.postValue(type)
+        _sort.value = type
     }
 
     /**
@@ -48,8 +52,8 @@ class MainViewModel(private val repository: EpisodeRepository) : BaseViewModel()
     /**
      * Get all episodes from repository - using switch map for dynamic sorting
      */
-    fun getAllEpisodes() =
-        Transformations.switchMap(_sort) { sortType -> repository.getAllSorted(sortType) }
+    @OptIn(ExperimentalCoroutinesApi::class)
+    fun getAllEpisodes() = _sort.flatMapLatest { repository.getAllSorted(it) }
 
     fun getEpisodeByIdFlow(epId: Int): Flow<Episode?> = repository.getById(epId)
 }

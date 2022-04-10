@@ -12,7 +12,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.lifecycle.*
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.NavController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -71,24 +72,14 @@ class MainActivity : ComponentActivity(), DIAware {
             viewModel.getEpisodes(navController)
             composable("splash") { SwSplashScreen() }
             composable(route = "list") {
-                val episodes by remember { viewModel.getAllEpisodes().asFlow() }
-                    .collectAsState(initial = emptyList())
+                val episodes = viewModel.getAllEpisodes().collectAsState(initial = emptyList())
                 EpisodeList(
-                    episodes = episodes,
-                    listener = object : EpisodeListListener {
-                        override fun onItemClick(episode: Episode) {
-                            navController.navigate("episodeDetail/${episode.episodeNo}")
-                        }
-
-                        override fun onSortClick(sortType: SortEnum) {
-                            viewModel.setSortType(sortType)
-                        }
-
-                        override fun onRefreshClick() {
-                            viewModel.getEpisodes(navController)
-                        }
-
-                    }
+                    episodes = episodes.value,
+                    onItemClick = {
+                        navController.navigate("episodeDetail/${it.episodeNo}")
+                    },
+                    onSortClick = viewModel::setSortType,
+                    onRefreshClick = { viewModel.getEpisodes(navController) }
                 )
             }
             composable(
@@ -139,25 +130,12 @@ val dummyResponse = StarWarsApiResponse(
     )
 )
 
-//@Preview(showBackground = true)
-//@Composable
-//fun SplashScreenPreview() {
-//    IntrepidNetworksSwapiTheme {
-//        SwSplashScreen()
-//    }
-//}
 
 @Preview(showBackground = true)
 @Composable
 fun LineItemPreview() {
     IntrepidNetworksSwapiTheme {
-        EpisodeList(episodes = emptyList(), object : EpisodeListListener{
-            override fun onItemClick(episode: Episode) {}
-
-            override fun onSortClick(sortType: SortEnum) {}
-
-            override fun onRefreshClick() {}
-        })
+        EpisodeList(episodes = emptyList(), {}, {}, {})
 //        LineItem(ep = dummyResponse.results[0]) { }
     }
 }
