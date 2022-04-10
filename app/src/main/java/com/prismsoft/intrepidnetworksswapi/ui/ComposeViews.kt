@@ -169,8 +169,8 @@ fun EpisodeDetail(ep: Episode, onClick: () -> Unit) {
 }
 
 @Composable
-fun SwSplashScreen() {
-    ConstraintLayout {
+fun SwSplashScreen(modifier: Modifier = Modifier) {
+    ConstraintLayout(modifier = modifier) {
         val (progress, text) = createRefs()
         CircularProgressIndicator(modifier = Modifier
             .fillMaxSize()
@@ -193,13 +193,13 @@ fun SwSplashScreen() {
 
 @Composable
 fun EpisodeList(
-    episodes: List<Episode>,
+    episodes: List<Episode>?,
     onItemClick: (Episode) -> Unit,
     onSortClick: (SortEnum) -> Unit,
     onRefreshClick: () -> Unit
 ) {
     ConstraintLayout {
-        if (episodes.isNotEmpty()) {
+        if (!episodes.isNullOrEmpty()) {
             val (itemList, sortEp, sortTitleAZ, sortTitleZA, sortDate) = createRefs()
 
             LazyColumn(
@@ -277,29 +277,34 @@ fun EpisodeList(
                 Text(text = "Sort By Release")
             }
         } else {
-            val (emptyState, refresh) = createRefs()
+            val listIsEmpty = episodes?.isEmpty() == true
+            val (emptyState, refresh, splash) = createRefs()
 
-            Text(
-                text = "The returned list was empty",
-                style = MaterialTheme.typography.caption,
-                color = MaterialTheme.colors.error,
-                modifier = Modifier.constrainAs(emptyState) { constrainCenter(margins = 16.dp) }
-            )
-            Button(
-                onClick = { onRefreshClick() },
-                modifier = Modifier.constrainAs(refresh) {
-                    start.linkTo(emptyState.start)
-                    end.linkTo(emptyState.end)
-                    top.linkTo(
-                        anchor = emptyState.bottom,
-                        margin = margins
+            if(listIsEmpty){
+                Text(
+                    text = "The returned list was empty",
+                    style = MaterialTheme.typography.caption,
+                    color = MaterialTheme.colors.error,
+                    modifier = Modifier.constrainAs(emptyState) { constrainCenter(margins = 16.dp) }
+                )
+                Button(
+                    onClick = { onRefreshClick() },
+                    modifier = Modifier.constrainAs(refresh) {
+                        start.linkTo(emptyState.start)
+                        end.linkTo(emptyState.end)
+                        top.linkTo(
+                            anchor = emptyState.bottom,
+                            margin = margins
+                        )
+                    }
+                ) {
+                    Text(
+                        text = "Try again",
+                        style = MaterialTheme.typography.button
                     )
                 }
-            ) {
-                Text(
-                    text = "Try again",
-                    style = MaterialTheme.typography.button
-                )
+            } else {
+                SwSplashScreen(modifier = Modifier.constrainAs(splash) { constrainCenter() })
             }
         }
     }

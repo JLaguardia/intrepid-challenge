@@ -23,30 +23,12 @@ class MainViewModel(private val repository: EpisodeRepository) : BaseViewModel()
     }
 
     /**
-     * State to observe for data changes.
-     * I have found that this is not necessary for Compose
-     */
-    sealed class MainState : State {
-        data class DataFetched(val navController: NavController) : MainState()
-        data class Error(val navController: NavController) : MainState()
-    }
-
-    /**
      * Fetches the episodes from the api and populates the db.
      * State is set according to the result in order to start
      * observing.
      */
-    fun getEpisodes(navController: NavController) {
-        viewModelScope.launch(Dispatchers.IO) {
-            val fetchSuccessful = repository.fetch()
-            setState(
-                if (fetchSuccessful) {
-                    MainState.DataFetched(navController)
-                } else {
-                    MainState.Error(navController)
-                }
-            )
-        }
+    fun getEpisodes() {
+        viewModelScope.launch(Dispatchers.IO) { repository.fetch() }
     }
 
     /**
@@ -55,7 +37,7 @@ class MainViewModel(private val repository: EpisodeRepository) : BaseViewModel()
     @OptIn(ExperimentalCoroutinesApi::class)
     fun getAllEpisodes() = _sort.flatMapLatest { repository.getAllSorted(it) }
 
-    fun getEpisodeByIdFlow(epId: Int): Flow<Episode?> = repository.getById(epId)
+    fun getEpisodeById(epId: Int): Flow<Episode?> = repository.getById(epId)
 }
 
 enum class SortEnum {
@@ -63,19 +45,4 @@ enum class SortEnum {
     EPISODE_NUM,
     TITLE_ASC,
     TITLE_DESC
-}
-
-//no longer necessary, but keeping it in just in case
-fun <T, K, R> LiveData<T>.combineWith(
-    secondData: LiveData<K>,
-    block: (T?, K?) -> R
-): LiveData<R> {
-    val result = MediatorLiveData<R>()
-    result.addSource(this) {
-        result.value = block.invoke(this.value, secondData.value)
-    }
-    result.addSource(secondData) {
-        result.value = block.invoke(this.value, secondData.value)
-    }
-    return result
 }

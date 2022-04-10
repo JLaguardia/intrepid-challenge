@@ -30,6 +30,7 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 
 // api: https://swapi.dev/api/films/ [GET]
+// todo: look into hilt (DI)
 class MainActivity : ComponentActivity(), DIAware {
 
     override val di: DI by closestDI()
@@ -37,26 +38,7 @@ class MainActivity : ComponentActivity(), DIAware {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContent {
-            IntrepidNetworksSwapiTheme {
-                MainContent()
-            }
-        }
-        viewModel.state.observe(this) { state ->
-            when (state) {
-                is MainViewModel.MainState.Error -> showError(state.navController)
-                is MainViewModel.MainState.DataFetched -> navigateToList(state.navController)
-                else -> Unit
-            }
-        }
-    }
-
-    private fun navigateToList(navController: NavController) {
-        navController.navigate("list")
-    }
-
-    private fun showError(navController: NavController) {
-        navController.navigate("error")
+        setContent { IntrepidNetworksSwapiTheme { MainContent() } }
     }
 
     @Composable
@@ -64,22 +46,18 @@ class MainActivity : ComponentActivity(), DIAware {
         val navController = rememberNavController()
         NavHost(
             navController = navController,
-            startDestination = "splash",
+            startDestination = "list",
             modifier = Modifier
                 .background(Color.Gray)
                 .fillMaxHeight()
         ) {
-            viewModel.getEpisodes(navController)
-            composable("splash") { SwSplashScreen() }
             composable(route = "list") {
-                val episodes = viewModel.getAllEpisodes().collectAsState(initial = emptyList())
+                val episodes by remember { viewModel.getAllEpisodes()}.collectAsState(initial = null)
                 EpisodeList(
-                    episodes = episodes.value,
-                    onItemClick = {
-                        navController.navigate("episodeDetail/${it.episodeNo}")
-                    },
+                    episodes = episodes,
+                    onItemClick = { navController.navigate("episodeDetail/${it.episodeNo}") },
                     onSortClick = viewModel::setSortType,
-                    onRefreshClick = { viewModel.getEpisodes(navController) }
+                    onRefreshClick = viewModel::getEpisodes
                 )
             }
             composable(
@@ -87,26 +65,10 @@ class MainActivity : ComponentActivity(), DIAware {
                 arguments = listOf(navArgument("epId") { type = NavType.StringType })
             ) { entry ->
                 entry.arguments?.getString("epId")?.let { epId ->
-                    val episode by remember { viewModel.getEpisodeByIdFlow(epId = epId.toInt()) }
+                    val episode by remember { viewModel.getEpisodeById(epId = epId.toInt()) }
                         .collectAsState(initial = null)
                     episode?.let {
                         EpisodeDetail(ep = it) { navController.popBackStack() }
-                    }
-                }
-            }
-            composable("error") {
-                Column {
-                    Row {
-                        Text(
-                            text = "There was an error!",
-                            color = MaterialTheme.colors.error
-                        )
-                    }
-                    Row {
-                        Button(
-                            onClick = { navController.navigate("splash") }) {
-                            Text(text = "Try again")
-                        }
                     }
                 }
             }
@@ -126,16 +88,30 @@ val dummyResponse = StarWarsApiResponse(
             created = LocalDateTime.now(),
             edited = LocalDateTime.now(),
             url = ""
+        ),
+        Episode(
+            title = "A newb Hope",
+            episodeNo = 5,
+            crawlText = "whatever",
+            director = "some guy",
+            producer = "some guy",
+            releaseDate = LocalDate.now(),
+            created = LocalDateTime.now(),
+            edited = LocalDateTime.now(),
+            url = ""
         )
     )
 )
 
+inline fun <reified VM : ViewModel, T> T.viewModel(): Lazy<VM> where T : DIAware, T : ComponentActivity {
+    return lazy { ViewModelProvider(this, direct.instance()).get(VM::class.java) }
+}
 
 @Preview(showBackground = true)
 @Composable
 fun LineItemPreview() {
     IntrepidNetworksSwapiTheme {
-        EpisodeList(episodes = emptyList(), {}, {}, {})
+        EpisodeList(episodes = dummyResponse.results, {}, {}, {})
 //        LineItem(ep = dummyResponse.results[0]) { }
     }
 }
@@ -144,10 +120,6 @@ fun LineItemPreview() {
 @Composable
 fun DetailPreview() {
     IntrepidNetworksSwapiTheme {
-        EpisodeDetail(ep = dummyResponse.results[0]) { }
+        EpisodeDetail(ep = dummyResponse.results[1]) { }
     }
-}
-
-inline fun <reified VM : ViewModel, T> T.viewModel(): Lazy<VM> where T : DIAware, T : ComponentActivity {
-    return lazy { ViewModelProvider(this, direct.instance()).get(VM::class.java) }
 }
